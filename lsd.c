@@ -110,9 +110,8 @@ main(void)
 	XFree(wins);
 
 	/* list desktops */
-	for (i = 0; i < ndesks; i++) {
-		printf("%c%lu:%lu\n", (i == curdesk ? '*' : ' '), (unsigned long)i, (unsigned long)wdesk[i]);
-	}
+	for (i = 0; i < ndesks; i++)
+		printf("%c%lu:%lu\n", (i == curdesk ? '*' : ' '), i, wdesk[i]);
 
 	/* close connection to the server */
 	XCloseDisplay(dpy);
