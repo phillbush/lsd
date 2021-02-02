@@ -1,0 +1,27 @@
+                                  lsd:
+                             List Desktops
+
+lsd(1) list the number of desktops, the number of the current desktop,
+and the number of windows per desktops.  A sample output is the
+following:
+
+	$ lsd
+	 0:2
+	 1:2
+	*2:1
+	 3:0
+	 4:0
+
+The first number indicates the desktop number, from 0 to the number of
+desktops minus 1 (in this example we have 5 desktops).  The current
+desktop is preceded by an asterisk.  Each desktop numberis succeeded by
+a colon and the number of windows exclusively in this desktop (windows
+that belongs to more than one desktops are ignored).
+
+Why?
+Because I need those information (current desk, windows per desk, etc)
+for my bar script.  I once wrote a script that used xprop(1) to output
+those information, but it took a whole second to run! Now rewritten in
+C, it takes less than a tenth of a second.
+
+This software is in public domain and is provided AS IS, with NO WARRANTY.
