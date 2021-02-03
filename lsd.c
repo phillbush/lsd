@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
@@ -59,9 +60,9 @@ getwinlist(Window **winlist)
 
 /* get array of desktop names, return size of array */
 static unsigned long
-getdesknames(char ***desknames)
+getdesknames(char **desknames)
 {
-	unsigned char *list;
+	unsigned char *str;
 	unsigned long len;
 	unsigned long dl;   /* dummy variable */
 	int di;             /* dummy variable */
@@ -69,9 +70,9 @@ getdesknames(char ***desknames)
 
 
 	if (XGetWindowProperty(dpy, root, netdesktopnames, 0, ~0, False,
-	                       utf8string, &da, &di, &len, &dl, &list) ==
-	                       Success && list) {
-		*desknames = (char **)list;
+	                       utf8string, &da, &di, &len, &dl, &str) ==
+	                       Success && str) {
+		*desknames = (char *)str;
 	} else {
 		*desknames = NULL;
 		len = 0;
@@ -105,17 +106,17 @@ getcardinalproperty(Window win, Atom prop)
 static void
 printinfo(int tabs)
 {
-	unsigned long i, nwins, desk, ndesks, curdesk, nnames;
+	unsigned long i, nwins, desk, ndesks, curdesk, len, nameslen;
 	unsigned long *wdesk;
 	int *urgdesks;
 	Window *wins;
 	XWMHints *hints;
-	char **desknames;
+	char *desknames;
 
 	/* get variables */
 	ndesks = getcardinalproperty(root, netnumberofdesktops);
 	curdesk = getcardinalproperty(root, netcurrentdesktop);
-	nnames = getdesknames(&desknames);
+	nameslen = getdesknames(&desknames);
 	wdesk = ecalloc(ndesks, sizeof *wdesk);
 	urgdesks = ecalloc(ndesks, sizeof *urgdesks);
 	nwins = getwinlist(&wins);
@@ -133,12 +134,14 @@ printinfo(int tabs)
 	XFree(wins);
 
 	/* list desktops */
-	for (i = 0; i < ndesks; i++) {
+	for (len = i = 0; i < ndesks; i++) {
 		printf("%c%lu:%s%s",
 		       (i == curdesk ? '*' : (urgdesks[i] ? '-' : ' ')),
 		       wdesk[i],
-		       (i < nnames ? desknames[i] : ""),
+		       (desknames && len < nameslen ? desknames+len : ""),
 		       (tabs ? (i + 1 < ndesks ? "\t" : "\n") : "\n"));
+		if (desknames && len < nameslen)
+			len += strlen(desknames + len) + 1;
 	}
 	fflush(stdout);
 	XFree(desknames);
@@ -174,14 +177,15 @@ main(int argc, char *argv[])
 		while (!XNextEvent(dpy, &ev)) {
 			if (ev.type == MapNotify) {
 				XSelectInput(dpy, ev.xmap.window, PropertyChangeMask);
-			} else if (ev.type == PropertyNotify &&
-			         (ev.xproperty.atom == netclientlist ||
-			          ev.xproperty.atom == netnumberofdesktops ||
-			          ev.xproperty.atom == netcurrentdesktop ||
-			          ev.xproperty.atom == netwmdesktop ||
-			          ev.xproperty.atom == netdesktopnames)) {
+			} else if (ev.type == ClientMessage ||
+			          (ev.type == PropertyNotify &&
+			          (ev.xproperty.atom == netclientlist ||
+			           ev.xproperty.atom == netnumberofdesktops ||
+			           ev.xproperty.atom == netcurrentdesktop ||
+			           ev.xproperty.atom == netwmdesktop ||
+			           ev.xproperty.atom == netdesktopnames))) {
 				printinfo(1);
-			}
+	 		}
 		}
 	}
 
