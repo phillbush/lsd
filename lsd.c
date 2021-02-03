@@ -124,7 +124,7 @@ printinfo(int tabs)
 		hints = XGetWMHints(dpy, wins[i]);
 		if (desk < ndesks) {
 			wdesk[desk]++;
-			if (hints->flags & XUrgencyHint) {
+			if (hints && hints->flags & XUrgencyHint) {
 				urgdesks[desk] = 1;
 			}
 		}
