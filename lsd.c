@@ -15,9 +15,12 @@
 static Display *dpy;
 static Window root;
 static int screen;
+static Atom utf8string;
 static Atom netnumberofdesktops;
 static Atom netcurrentdesktop;
 static Atom netwmdesktop;
+static Atom netdesktopnames;
+static Atom netclientlist;
 
 /* call calloc checking for errors */
 static void *
@@ -29,20 +32,18 @@ ecalloc(size_t nmemb, size_t size)
 	return p;
 }
 
-/* get list of windows, return number of windows */
+/* get aray of windows, return number of windows */
 static unsigned long
 getwinlist(Window **winlist)
 {
 	unsigned char *list;
 	unsigned long len;
-	Atom netclientlist;
 	unsigned long dl;   /* dummy variable */
 	unsigned int du;    /* dummy variable */
 	int di;             /* dummy variable */
 	Window dw;          /* dummy variable */
 	Atom da;            /* dummy variable */
 
-	netclientlist = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
 	if (XGetWindowProperty(dpy, root, netclientlist, 0L, 1024, False,
 	                       XA_WINDOW, &da, &di, &len, &dl, &list) ==
 	                       Success && list) {
@@ -51,6 +52,29 @@ getwinlist(Window **winlist)
 		len = (unsigned long)du;
 	} else {
 		errx(1, "could not get list of windows");
+	}
+
+	return len;
+}
+
+/* get array of desktop names, return size of array */
+static unsigned long
+getdesknames(char ***desknames)
+{
+	unsigned char *list;
+	unsigned long len;
+	unsigned long dl;   /* dummy variable */
+	int di;             /* dummy variable */
+	Atom da;            /* dummy variable */
+
+
+	if (XGetWindowProperty(dpy, root, netdesktopnames, 0, ~0, False,
+	                       utf8string, &da, &di, &len, &dl, &list) ==
+	                       Success && list) {
+		*desknames = (char **)list;
+	} else {
+		*desknames = NULL;
+		len = 0;
 	}
 
 	return len;
@@ -77,13 +101,55 @@ getcardinalproperty(Window win, Atom prop)
 	return retval;
 }
 
+/* get properties and print information */
+static void
+printinfo(int tabs)
+{
+	unsigned long i, nwins, desk, ndesks, curdesk, nnames;
+	unsigned long *wdesk;
+	int *urgdesks;
+	Window *wins;
+	XWMHints *hints;
+	char **desknames;
+
+	/* get variables */
+	ndesks = getcardinalproperty(root, netnumberofdesktops);
+	curdesk = getcardinalproperty(root, netcurrentdesktop);
+	nnames = getdesknames(&desknames);
+	wdesk = ecalloc(ndesks, sizeof *wdesk);
+	urgdesks = ecalloc(ndesks, sizeof *urgdesks);
+	nwins = getwinlist(&wins);
+	for (i = 0; i < nwins; i++) {
+		desk = getcardinalproperty(wins[i], netwmdesktop);
+		hints = XGetWMHints(dpy, wins[i]);
+		if (desk < ndesks) {
+			wdesk[desk]++;
+			if (hints->flags & XUrgencyHint) {
+				urgdesks[desk] = 1;
+			}
+		}
+		XFree(hints);
+	}
+	XFree(wins);
+
+	/* list desktops */
+	for (i = 0; i < ndesks; i++) {
+		printf("%c%lu:%s%s",
+		       (i == curdesk ? '*' : (urgdesks[i] ? '-' : ' ')),
+		       wdesk[i],
+		       (i < nnames ? desknames[i] : ""),
+		       (tabs ? (i + 1 < ndesks ? "\t" : "\n") : "\n"));
+	}
+	fflush(stdout);
+	XFree(desknames);
+	free(wdesk);
+}
+
 /* xhello: create and display a basic window with default white background */
 int
-main(void)
+main(int argc, char *argv[])
 {
-	unsigned long i, nwins, desk, ndesks, curdesk;
-	unsigned long *wdesk;
-	Window *wins;
+	XEvent ev;
 
 	/* open connection to the server */
 	if ((dpy = XOpenDisplay(NULL)) == NULL)
@@ -92,26 +158,25 @@ main(void)
 	root = RootWindow(dpy, screen);
 
 	/* intern atoms */
+	utf8string = XInternAtom(dpy, "UTF8_STRING", False);;
+	netclientlist = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
 	netnumberofdesktops = XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", False);
 	netcurrentdesktop = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", False);
 	netwmdesktop = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
+	netdesktopnames = XInternAtom(dpy, "_NET_DESKTOP_NAMES", False);
 
-	/* get variables */
-	ndesks = getcardinalproperty(root, netnumberofdesktops);
-	curdesk = getcardinalproperty(root, netcurrentdesktop);
-	wdesk = ecalloc(ndesks, sizeof *wdesk);
-	nwins = getwinlist(&wins);
-	for (i = 0; i < nwins; i++) {
-		desk = getcardinalproperty(wins[i], netwmdesktop);
-		if (desk < ndesks) {
-			wdesk[desk]++;
+	(void)argv;
+	if (argc == 1) {
+		printinfo(0);
+	} else {
+		XSelectInput(dpy, root, PropertyChangeMask | SubstructureNotifyMask);
+		printinfo(1);
+		while (!XNextEvent(dpy, &ev)) {
+			if (ev.type == MapNotify)
+				XSelectInput(dpy, ev.xmap.window, PropertyChangeMask);
+			printinfo(1);
 		}
 	}
-	XFree(wins);
-
-	/* list desktops */
-	for (i = 0; i < ndesks; i++)
-		printf("%c%lu:%lu\n", (i == curdesk ? '*' : ' '), i, wdesk[i]);
 
 	/* close connection to the server */
 	XCloseDisplay(dpy);

@@ -5,17 +5,23 @@ lsd(1) lists the number of desktops, the number of the current desktop,
 and the number of windows per desktops.  Here's a sample output:
 
 	$ lsd
-	 0:2
-	 1:2
-	*2:1
-	 3:0
-	 4:0
+	 2:Work
+	-2:Web
+	*1:Chat
+	 0:Games
+	 0:Other
 
-The first number indicates the desktop number, from 0 to the number of
-desktops minus 1 (in this example we have 5 desktops).  The current
-desktop is preceded by an asterisk.  Each desktop number is followed by
-a colon and the number of windows exclusively in this desktop (windows
-that belongs to more than one desktop are ignored).
+Each line indicates a desktop, from 0 to the number of desktops minus 1
+(in this example we have 5 desktops).  The current desktop is indicated
+by an asterisk, the desktop with an urgent window is indicated by an
+hyphen.  The number indicates the number of windows exclusively in this
+desktop (windows that belongs to more than one desktop are ignored).
+After the colon is the name of the desktop.
+
+With an argument (such as -w), lsd watches for changes in the desktop
+structure.  In this case, instead of being separated by lines, each
+desktop info is separated by a tab, and each time new information is
+queried a new information line is printed.
 
 Why?
 Because I need those information (current desk, windows per desk, etc)
