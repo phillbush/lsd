@@ -145,7 +145,7 @@ printinfo(int tabs)
 	free(wdesk);
 }
 
-/* xhello: create and display a basic window with default white background */
+/* lsd: list desktops */
 int
 main(int argc, char *argv[])
 {
