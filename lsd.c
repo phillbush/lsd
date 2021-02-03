@@ -102,6 +102,19 @@ getcardinalproperty(Window win, Atom prop)
 	return retval;
 }
 
+/* select inputs we are interested in in all clients */
+static void
+selectwininput(void)
+{
+	unsigned long i, nwins;
+	Window *wins;
+
+	nwins = getwinlist(&wins);
+	for (i = 0; i < nwins; i++)
+		XSelectInput(dpy, wins[i], PropertyChangeMask | StructureNotifyMask);
+	XFree(wins);
+}
+
 /* get properties and print information */
 static void
 printinfo(int tabs)
@@ -173,17 +186,11 @@ main(int argc, char *argv[])
 		printinfo(0);
 	} else {
 		XSelectInput(dpy, root, PropertyChangeMask | SubstructureNotifyMask);
+		selectwininput();
 		printinfo(1);
 		while (!XNextEvent(dpy, &ev)) {
-			if (ev.type == MapNotify) {
-				XSelectInput(dpy, ev.xmap.window, PropertyChangeMask);
-			} else if (ev.type == ClientMessage ||
-			          (ev.type == PropertyNotify &&
-			          (ev.xproperty.atom == netclientlist ||
-			           ev.xproperty.atom == netnumberofdesktops ||
-			           ev.xproperty.atom == netcurrentdesktop ||
-			           ev.xproperty.atom == netwmdesktop ||
-			           ev.xproperty.atom == netdesktopnames))) {
+			selectwininput();
+			if (ev.type == ClientMessage || ev.type == PropertyNotify) {
 				printinfo(1);
 	 		}
 		}
