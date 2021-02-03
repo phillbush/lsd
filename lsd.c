@@ -17,6 +17,7 @@ static Display *dpy;
 static Window root;
 static int screen;
 static Atom utf8string;
+static Atom wmhints;
 static Atom netnumberofdesktops;
 static Atom netcurrentdesktop;
 static Atom netwmdesktop;
@@ -175,6 +176,7 @@ main(int argc, char *argv[])
 
 	/* intern atoms */
 	utf8string = XInternAtom(dpy, "UTF8_STRING", False);;
+	wmhints = XInternAtom(dpy, "WM_HINTS", False);;
 	netclientlist = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
 	netnumberofdesktops = XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", False);
 	netcurrentdesktop = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", False);
@@ -190,7 +192,14 @@ main(int argc, char *argv[])
 		printinfo(1);
 		while (!XNextEvent(dpy, &ev)) {
 			selectwininput();
-			if (ev.type == ClientMessage || ev.type == PropertyNotify) {
+			if (ev.type == ClientMessage ||
+			   (ev.type == PropertyNotify &&
+			   (ev.xproperty.atom == wmhints ||
+			    ev.xproperty.atom == netclientlist ||
+			    ev.xproperty.atom == netnumberofdesktops ||
+			    ev.xproperty.atom == netcurrentdesktop ||
+			    ev.xproperty.atom == netwmdesktop ||
+			    ev.xproperty.atom == netdesktopnames))) {
 				printinfo(1);
 	 		}
 		}
