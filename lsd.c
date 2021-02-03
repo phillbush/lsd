@@ -172,9 +172,16 @@ main(int argc, char *argv[])
 		XSelectInput(dpy, root, PropertyChangeMask | SubstructureNotifyMask);
 		printinfo(1);
 		while (!XNextEvent(dpy, &ev)) {
-			if (ev.type == MapNotify)
+			if (ev.type == MapNotify) {
 				XSelectInput(dpy, ev.xmap.window, PropertyChangeMask);
-			printinfo(1);
+			} else if (ev.type == PropertyNotify &&
+			         (ev.xproperty.atom == netclientlist ||
+			          ev.xproperty.atom == netnumberofdesktops ||
+			          ev.xproperty.atom == netcurrentdesktop ||
+			          ev.xproperty.atom == netwmdesktop ||
+			          ev.xproperty.atom == netdesktopnames)) {
+				printinfo(1);
+			}
 		}
 	}
 
