@@ -1,8 +1,10 @@
                                   lsd:
                              List Desktops
 
-lsd(1) lists the number of desktops, the number of the current desktop,
-and the number of windows per desktops.  Here's a sample output:
+lsd(1) lists one line per desktop (in the order they are sorted).  Each
+line contains the desktop state (whether it is the current one, or the
+urgent one), the number of windows in this desktop, and the name of the
+desktop.  Here's a sample output:
 
 	$ lsd
 	 2:Work
