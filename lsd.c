@@ -7,12 +7,6 @@
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 
-#define POSX    200
-#define POSY    200
-#define WIDTH   350
-#define HEIGHT  250
-#define BORDER  10
-
 static Display *dpy;
 static Window root;
 static int screen;
